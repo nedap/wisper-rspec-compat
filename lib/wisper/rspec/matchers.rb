@@ -1,3 +1,4 @@
+require 'wisper'
 require 'rspec/expectations'
 require 'rspec/mocks/argument_list_matcher'
 
@@ -19,14 +20,16 @@ module Wisper
         true
       end
 
-      def method_missing(method_name, *args, &block)
-        @broadcast_events << [method_name.to_s, *args]
+      def method_missing(method_name, *args, **kwargs, &block)
+        @broadcast_events << [method_name.to_s, *args, **kwargs]
       end
 
-      def broadcast?(event_name, *args)
+      def broadcast?(event_name, *args, **kwargs)
+
         expected_args = args.size > 0 ? args : [any_args]
+        expected_kwargs = kwargs.empty? ? {} : kwargs
         @broadcast_events.any? do |event_params|
-          matcher = ::RSpec::Mocks::ArgumentListMatcher.new(event_name.to_s, *expected_args)
+          matcher = ::RSpec::Mocks::ArgumentListMatcher.new(event_name.to_s, *expected_args, **expected_kwargs)
           matcher.args_match?(*event_params)
         end
       end
@@ -36,9 +39,10 @@ module Wisper
       class Matcher
         include ::RSpec::Matchers::Composable
 
-        def initialize(event, *args)
+        def initialize(event, *args, **kwargs)
           @event = event
           @args = args
+          @kwargs = kwargs
         end
 
         def supports_block_expectations?
@@ -48,28 +52,31 @@ module Wisper
         def matches?(block)
           @event_recorder = EventRecorder.new
 
-          Wisper.subscribe(@event_recorder) do
+          Wisper.subscribe(@event_recorder, {}) do
             block.call
           end
 
-          @event_recorder.broadcast?(@event, *@args)
+          @event_recorder.broadcast?(@event, *@args, **@kwargs)
         end
 
         def description
           msg = "broadcast #{@event} event"
           msg += " with args: #{@args.inspect}" if @args.size > 0
+          msg += " with kwargs: #{@kwargs.inspect}" unless @kwargs.empty?
           msg
         end
 
         def failure_message
           msg = "expected publisher to broadcast #{@event} event"
           msg += " with args: #{@args.inspect}" if @args.size > 0
+          msg += " with args: #{@kwargs.inspect}" unless @kwargs.empty?
           msg << broadcast_events_list
           msg
         end
 
         def expected
           [] << @args
+          [] << @kwargs
         end
 
         def actual
@@ -83,6 +90,7 @@ module Wisper
         def failure_message_when_negated
           msg = "expected publisher not to broadcast #{@event} event"
           msg += " with args: #{@args.inspect}" if @args.size > 0
+          msg += " with args: #{@kwargs.inspect}" unless @kwargs.empty?
           msg
         end
 
@@ -107,8 +115,8 @@ module Wisper
         private :event_names
       end
 
-      def broadcast(event, *args)
-        Matcher.new(event, *args)
+      def broadcast(event, *args, **kwargs)
+        Matcher.new(event, *args, **kwargs)
       end
 
       alias_method :publish, :broadcast
