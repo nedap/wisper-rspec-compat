@@ -88,7 +88,7 @@ describe Wisper::RSpec::BroadcastMatcher::Matcher do
 
       it 'has descriptive failure message' do
         message = "expected publisher to broadcast it_happened event "\
-          "(actual events broadcast: event1, event2(12345, foo))"
+          "(actual events broadcast: event1({}), event2(12345, foo, {}))"
         expect(matcher.failure_message).to eq(message)
       end
     end
