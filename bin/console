@@ -3,6 +3,3 @@
 require "bundler/setup"
 require "wisper/rspec"
 require 'wisper/rspec/matchers'
-
-require "pry"
-Pry.start
