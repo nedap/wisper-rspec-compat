@@ -16,5 +16,5 @@ Gem::Specification.new do |spec|
   spec.files         = Dir.glob("{bin,lib}/**/*") + %w[LICENSE.txt README.md CHANGELOG.md]
   spec.require_paths = ["lib"]
 
-  spec.required_ruby_version  = '>= 3'
+  spec.required_ruby_version  = '>= 2.7'
 end
